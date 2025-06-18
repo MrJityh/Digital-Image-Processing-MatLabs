@@ -1,0 +1,70 @@
+%% Part 2
+clc; clear; close all;
+
+load('starFish_project_4.mat'); % Load the dataset
+K = 5; % Set the number of clusters
+its = 100; % number of iterations
+
+if iscell(F) % Check if F is a cell array
+    [~,imgNum]=size(F); % get the number of images the cell array holds
+
+    for i = 0 : imgNum-1 % If F is a cell array, extract the first image or data element (assuming it's consistent)
+        % Variable Set-Up
+        inputImg = cell2mat(F((i+1))); % Grab image
+        %figure; imshow(inputImg);
+        [H,W,C] = size(inputImg);
+        RGB_Data = double(reshape(inputImg,H*W,C)); % Flatten the image into 2D matrix of RGB pixel data
+        
+        [dataPoints,dimension]=size(RGB_Data);
+        
+        % Step 1: Randomly intialize centroids
+        I = randperm(dataPoints);
+        cluster_center=RGB_Data(I(1:K),:);
+
+        % Setup distance array
+        Distances = zeros(dataPoints,K);
+        % Step 4: repeat until the number of iterations is matched
+        for n=1:its
+            % Step 2: Categorize each datapoint based on the distance to a centroid
+            for k=1:K
+                % 2a: Calculates the distances for each data point between all the K centroids
+                Distances(:,k) = sum((RGB_Data - repmat(cluster_center(k,:),dataPoints,1)).^2,2);
+            end
+
+            % 2b: Find which of those centroid distances is the smallest
+            [~,labels] = min(Distances,[],2);
+            
+            % Step 3: Get the new mean value of current categorized points
+            for k=1:K
+                if size(find(labels==k))>0
+                    cluster_center(k,:) = mean(RGB_Data(labels==k,:));
+                end
+            end
+        end
+        
+        % Initialize outputs
+        new_output = zeros(H*W,C);
+        % ## control_output = zeros(H*W,C);
+        % ## [labels_control,cluster_center_control] = kmeans(RGB_Data,K,'distance','sqEuclidean');
+
+        % Fill outputs
+        for j = 1 : K
+            k_idx = find(labels == j);
+            % ## ck_idx = find(labels_control == j);
+            for c = 1 : C
+                new_output(k_idx, c) = cluster_center(j,c);
+                % ##control_output(ck_idx, c) = cluster_center_control(j,c);
+            end
+        end
+
+        new_output = reshape(new_output,[H,W,C]); % Reshape and then display output
+        % ## control_output = reshape(control_output, [H,W,C]);
+        % Display the images 
+        subplot(imgNum,3,(3*i+1)); imshow(inputImg); title('Input Image');
+        subplot(imgNum,3,(3*i+2)); imshow(new_output/255); title("Custom Algorithm");
+        % ## subplot(imgNum,3,(3*i+3)); imshow(control_output/255); title("Using kmeans");
+      
+
+        %imshowpair(inputImg,new_output/255,'montage');
+    end
+end
